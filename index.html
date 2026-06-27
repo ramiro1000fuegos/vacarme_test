@@ -237,7 +237,13 @@ if ('serviceWorker' in navigator) {
    ========================================================= */
 // Lien du Google Sheet publié au format CSV
 // (Fichier > Partager > Publier sur le web > format CSV)
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdnEpOivQC2Xjn9r183vcW_Da8WDAXqSF3hx6G7zaXmGL4XySz3yxwgaHtYkDYOjv16Nj6pNHMwAow/pub?gid=1957530806&single=true&output=csv";
+const CSV_URL_prod = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdnEpOivQC2Xjn9r183vcW_Da8WDAXqSF3hx6G7zaXmGL4XySz3yxwgaHtYkDYOjv16Nj6pNHMwAow/pub?gid=1957530806&single=true&output=csv";
+const CSV_URL_test = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0V09LlAx5ruJN3M6bVD1sZK9YndPIeDiA9I6tiQx_FXSmIxjl3-tKfpDG-XSuPic3JJST8yki86rv/pub?gid=1957530806&single=true&output=csv";  
+  
+const path = window.location.pathname;
+const CSV_URL = (path.includes('-test') || path.includes('-prex'))
+  ? CSV_URL_test
+  : CSV_URL_prod;
 
 /* =========================================================
    TEXTES
