@@ -371,8 +371,12 @@ const Game = {
     state.errorMsg = "";
     render();
     try {
-      state.allWords = parsed.data;
-      Game.filterAndStart();      
+      const res = await fetch(CSV_URL);
+      if (!res.ok) throw new Error("fetch failed");
+      const csvText = await res.text();
+      const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      state.allWords = result.data;
+      Game.filterAndStart();
     } catch (e) {
       console.error("Erreur de chargement du CSV :", e);
       state.errorMsg = t().errFetch;
@@ -380,7 +384,7 @@ const Game = {
       render();
     }
   },
-
+  
   seeSyllable() {
     state.phase = "reveal-shown";
     render();
