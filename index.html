@@ -510,7 +510,7 @@ function render() {
         ${counter}
         ${cardShell(
           ``,
-          `<button class="btn btn-amber" onclick="Game.showSolution()">${T.btnSolution}</button>`
+          `<button class="btn btn-amber" onclick="Game.showSolution()">${ICON_EYE} ${T.btnSolution}</button>`
         )}`;
     }
 
@@ -522,7 +522,7 @@ function render() {
           `<p class="player-label">${T.solutionIntro}</p>
            <p class="solution-word">${word["Word"]}</p>
            <p class="solution-syllables">${word["Syll"]}</p>`,
-          `<button class="btn btn-blue" onclick="Game.nextWord()">${T.btnNewWord}</button>`
+          `<button class="btn btn-blue" onclick="Game.nextWord()">${T.btnNewWord} ${ICON_ARROW}</button>`
         )}`;
     }
   }
