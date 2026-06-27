@@ -32,7 +32,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px 20px;
+    padding: 24px 20px 120px;
     background: radial-gradient(circle at 50% 0%, var(--felt), var(--felt-dark));
     position: relative;
   }
@@ -112,16 +112,6 @@
     justify-content: center;
     text-align: center;
   }
-  .pip {
-    position: absolute;
-    font-family: var(--serif);
-    font-size: 1.1rem;
-    color: var(--gold);
-    user-select: none;
-  }
-  .pip.tl { top: 14px; left: 18px; }
-  .pip.br { bottom: 14px; right: 18px; transform: rotate(180deg); }
-  .pip.accent { color: var(--red); }
 
   .word-counter {
     color: var(--gold);
@@ -184,7 +174,20 @@
   .btn:active { transform: scale(0.96); }
   .btn-red { background: var(--red); }
   .btn-felt { background: var(--felt); }
+  .btn-amber { background: #E2A23B; color: var(--ink); }
+  .btn-blue { background: #2F6FA8; }  
 
+  .action-area {
+    position: fixed;
+    bottom: 28px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+    z-index: 40;
+  }
+  
   .error-text {
     color: var(--ink);
     margin-bottom: 24px;
@@ -236,7 +239,7 @@ const TXT = {
     secretInstr: "Regardez seul(e) — personne d'autre ne doit voir l'écran.",
     btnSee: "Voir la syllabe",
     btnNext: "Joueur suivant",
-    revealedFor: (n) => `Syllabe du joueur ${n}`,
+    yourSyllable: "Voici votre syllabe :",
     btnSolution: "Afficher la solution",
     solutionIntro: "Le mot était :",
     btnNewWord: "Mot suivant",
@@ -256,7 +259,7 @@ const TXT = {
     secretInstr: "Mira solo/a — nadie más debe ver la pantalla.",
     btnSee: "Ver la sílaba",
     btnNext: "Siguiente jugador",
-    revealedFor: (n) => `Sílaba del jugador ${n}`,
+    yourSyllable: "Aquí tienes tu sílaba:",
     btnSolution: "Mostrar la solución",
     solutionIntro: "La palabra era:",
     btnNewWord: "Siguiente palabra",
@@ -265,8 +268,6 @@ const TXT = {
     btnRestart: "Volver a empezar",
   },
 };
-
-const SUITS = ["♠", "♥", "♦", "♣"];
 
 const ICON_HOME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg>';
 const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -413,12 +414,12 @@ function topbar(showHome) {
   </div>`;
 }
 
-function cardShell(innerHtml, suit, accent) {
-  return `<div class="card-shell">
-    <span class="pip tl ${accent ? "accent" : ""}">${suit}</span>
-    <span class="pip br ${accent ? "accent" : ""}">${suit}</span>
-    ${innerHtml}
-  </div>`;
+function cardShell(innerHtml) {
+  return `<div class="card-shell">${innerHtml}</div>`;
+}
+
+function actionArea(buttonHtml) {
+  return `<div class="action-area">${buttonHtml}</div>`;
 }
 
 function render() {
@@ -459,15 +460,12 @@ function render() {
   else if (state.screen === "error") {
     html = `
       ${topbar(true)}
-      ${cardShell(`
-        <p class="error-text">${state.errorMsg}</p>
-        <button class="btn btn-red" onclick="Game.loadWords()">${T.retry}</button>
-      `, "♣")}`;
+      ${cardShell(`<p class="error-text">${state.errorMsg}</p>`)}
+      ${actionArea(`<button class="btn btn-red" onclick="Game.loadWords()">${T.retry}</button>`)}`;
   }
 
-  else if (state.screen === "game") {
+else if (state.screen === "game") {
     const word = state.words[state.wordIndex] || {};
-    const suit = SUITS[(state.wordIndex + state.currentPlayer) % SUITS.length];
     const counter = `<p class="word-counter">${T.wordCounter(state.wordIndex + 1, state.words.length)}</p>`;
 
     if (state.phase === "finished") {
@@ -476,33 +474,31 @@ function render() {
         ${cardShell(`
           <p class="gameover-title">${T.gameOverTitle}</p>
           <p class="gameover-sub">${T.gameOverSub}</p>
-          <button class="btn btn-red" onclick="Game.resetAll()">${ICON_REPLAY} ${T.btnRestart}</button>
-        `, "♥", true)}`;
+        `)}
+        ${actionArea(`<button class="btn btn-red" onclick="Game.resetAll()">${ICON_REPLAY} ${T.btnRestart}</button>`)}`;
     }
 
     else if (state.phase === "reveal-ready" || state.phase === "reveal-shown") {
       let inner = `<p class="player-label">${T.playerLabel(state.currentPlayer + 1)}</p>`;
+      let button = "";
       if (state.phase === "reveal-ready") {
-        inner += `
-          <p class="secret-instr">${T.secretInstr}</p>
-          <button class="btn btn-red" onclick="Game.seeSyllable()">${ICON_EYE} ${T.btnSee}</button>`;
+        inner += `<p class="secret-instr">${T.secretInstr}</p>`;
+        button = `<button class="btn btn-red" onclick="Game.seeSyllable()">${ICON_EYE} ${T.btnSee}</button>`;
       } else {
         inner += `
-          <p class="player-label">${T.revealedFor(state.currentPlayer + 1)}</p>
-          <p class="syllable-big">${state.assignments[state.currentPlayer]}</p>
-          <button class="btn btn-felt" onclick="Game.nextPlayer()">${T.btnNext} ${ICON_ARROW}</button>`;
+          <p class="player-label">${T.yourSyllable}</p>
+          <p class="syllable-big">${state.assignments[state.currentPlayer]}</p>`;
+        button = `<button class="btn btn-felt" onclick="Game.nextPlayer()">${T.btnNext} ${ICON_ARROW}</button>`;
       }
-      html = `${topbar(true)}${counter}${cardShell(inner, suit)}`;
+      html = `${topbar(true)}${counter}${cardShell(inner)}${actionArea(button)}`;
     }
 
     else if (state.phase === "solution-ready") {
       html = `
         ${topbar(true)}
         ${counter}
-        ${cardShell(`
-          <p class="player-label">${T.playerLabel(state.playerCount)}</p>
-          <button class="btn btn-red" onclick="Game.showSolution()">${T.btnSolution}</button>
-        `, suit, true)}`;
+        ${cardShell(``)}
+        ${actionArea(`<button class="btn btn-amber" onclick="Game.showSolution()">${T.btnSolution}</button>`)}`;
     }
 
     else if (state.phase === "solution-shown") {
@@ -513,8 +509,8 @@ function render() {
           <p class="player-label">${T.solutionIntro}</p>
           <p class="solution-word">${word["Word"]}</p>
           <p class="solution-syllables">${word["Syll"]}</p>
-          <button class="btn btn-red" onclick="Game.nextWord()">${T.btnNewWord}</button>
-        `, suit, true)}`;
+        `)}
+        ${actionArea(`<button class="btn btn-blue" onclick="Game.nextWord()">${T.btnNewWord}</button>`)}`;
     }
   }
 
