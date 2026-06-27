@@ -37,23 +37,29 @@
     position: relative;
   }
   .topbar {
-    position: absolute;
+    position: fixed;
     top: 16px;
     left: 16px;
     right: 16px;
     display: flex;
     justify-content: space-between;
+    z-index: 50;
   }
   .icon-btn {
-    background: none;
+    background: rgba(0,0,0,0.25);
     border: none;
+    border-radius: 50%;
     color: var(--card);
     cursor: pointer;
-    padding: 6px;
-    opacity: 0.85;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.95;
   }
   .icon-btn:hover { opacity: 1; }
-  .icon-btn svg { width: 22px; height: 22px; }
+  .icon-btn svg { width: 24px; height: 24px; }
 
   h1.page-title {
     color: var(--card);
