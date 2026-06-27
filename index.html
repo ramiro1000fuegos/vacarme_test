@@ -241,7 +241,7 @@ const CSV_URL_prod = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdnEpOivQ
 const CSV_URL_test = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0V09LlAx5ruJN3M6bVD1sZK9YndPIeDiA9I6tiQx_FXSmIxjl3-tKfpDG-XSuPic3JJST8yki86rv/pub?gid=1957530806&single=true&output=csv";  
   
 const path = window.location.pathname;
-const CSV_URL = (path.includes('-test') || path.includes('-prex'))
+const CSV_URL = (path.includes('_test') || path.includes('_prex'))
   ? CSV_URL_test
   : CSV_URL_prod;
 
