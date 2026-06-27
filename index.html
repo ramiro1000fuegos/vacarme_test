@@ -32,7 +32,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px 20px 120px;
+    padding: 24px 20px;
     background: radial-gradient(circle at 50% 0%, var(--felt), var(--felt-dark));
     position: relative;
   }
@@ -95,30 +95,53 @@
   .tile-btn .flag { font-size: 44px; line-height: 1; }
   .tile-btn .label { color: var(--ink); font-family: var(--serif); font-size: 1rem; }
   .tile-btn .num { color: var(--ink); font-family: var(--serif); font-size: 2rem; }
-
   .card-shell {
-    position: relative;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0 auto;
     width: 100%;
-    max-width: 380px;
-    min-height: 320px;
+    max-width: 420px;
+    min-height: 58vh;
     background: var(--card);
     border: 1px solid var(--card-edge);
-    border-radius: 18px;
-    padding: 40px 28px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    border-radius: 24px 24px 0 0;
+    padding: 36px 28px 24px;
+    box-shadow: 0 -12px 40px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+  }
+  .card-content {
+    flex: 1;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
+  }
+  .card-action {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-top: 16px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
   .word-counter {
+    position: fixed;
+    top: 72px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    z-index: 30;
     color: var(--gold);
     font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    margin-bottom: 14px;
     opacity: 0.85;
   }
   .player-label {
@@ -177,17 +200,6 @@
   .btn-amber { background: #E2A23B; color: var(--ink); }
   .btn-blue { background: #2F6FA8; }  
 
-  .action-area {
-    position: fixed;
-    bottom: 28px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    padding: 0 20px;
-    z-index: 40;
-  }
-  
   .error-text {
     color: var(--ink);
     margin-bottom: 24px;
@@ -414,13 +426,12 @@ function topbar(showHome) {
   </div>`;
 }
 
-function cardShell(innerHtml) {
-  return `<div class="card-shell">${innerHtml}</div>`;
-}
-
-function actionArea(buttonHtml) {
-  return `<div class="action-area">${buttonHtml}</div>`;
-}
+function cardShell(contentHtml, buttonHtml) {
+  return `<div class="card-shell">
+    <div class="card-content">${contentHtml}</div>
+    <div class="card-action">${buttonHtml || ""}</div>
+  </div>`;
+}  
 
 function render() {
   const app = document.getElementById("app");
@@ -460,22 +471,24 @@ function render() {
   else if (state.screen === "error") {
     html = `
       ${topbar(true)}
-      ${cardShell(`<p class="error-text">${state.errorMsg}</p>`)}
-      ${actionArea(`<button class="btn btn-red" onclick="Game.loadWords()">${T.retry}</button>`)}`;
+      ${cardShell(
+        `<p class="error-text">${state.errorMsg}</p>`,
+        `<button class="btn btn-red" onclick="Game.loadWords()">${T.retry}</button>`
+      )}`;
   }
 
-else if (state.screen === "game") {
+  else if (state.screen === "game") {
     const word = state.words[state.wordIndex] || {};
     const counter = `<p class="word-counter">${T.wordCounter(state.wordIndex + 1, state.words.length)}</p>`;
 
     if (state.phase === "finished") {
       html = `
         ${topbar(true)}
-        ${cardShell(`
-          <p class="gameover-title">${T.gameOverTitle}</p>
-          <p class="gameover-sub">${T.gameOverSub}</p>
-        `)}
-        ${actionArea(`<button class="btn btn-red" onclick="Game.resetAll()">${ICON_REPLAY} ${T.btnRestart}</button>`)}`;
+        ${cardShell(
+          `<p class="gameover-title">${T.gameOverTitle}</p>
+           <p class="gameover-sub">${T.gameOverSub}</p>`,
+          `<button class="btn btn-red" onclick="Game.resetAll()">${ICON_REPLAY} ${T.btnRestart}</button>`
+        )}`;
     }
 
     else if (state.phase === "reveal-ready" || state.phase === "reveal-shown") {
@@ -490,30 +503,32 @@ else if (state.screen === "game") {
           <p class="syllable-big">${state.assignments[state.currentPlayer]}</p>`;
         button = `<button class="btn btn-felt" onclick="Game.nextPlayer()">${T.btnNext} ${ICON_ARROW}</button>`;
       }
-      html = `${topbar(true)}${counter}${cardShell(inner)}${actionArea(button)}`;
+      html = `${topbar(true)}${counter}${cardShell(inner, button)}`;
     }
 
     else if (state.phase === "solution-ready") {
       html = `
         ${topbar(true)}
         ${counter}
-        ${cardShell(``)}
-        ${actionArea(`<button class="btn btn-amber" onclick="Game.showSolution()">${T.btnSolution}</button>`)}`;
+        ${cardShell(
+          ``,
+          `<button class="btn btn-amber" onclick="Game.showSolution()">${T.btnSolution}</button>`
+        )}`;
     }
 
     else if (state.phase === "solution-shown") {
       html = `
         ${topbar(true)}
         ${counter}
-        ${cardShell(`
-          <p class="player-label">${T.solutionIntro}</p>
-          <p class="solution-word">${word["Word"]}</p>
-          <p class="solution-syllables">${word["Syll"]}</p>
-        `)}
-        ${actionArea(`<button class="btn btn-blue" onclick="Game.nextWord()">${T.btnNewWord}</button>`)}`;
+        ${cardShell(
+          `<p class="player-label">${T.solutionIntro}</p>
+           <p class="solution-word">${word["Word"]}</p>
+           <p class="solution-syllables">${word["Syll"]}</p>`,
+          `<button class="btn btn-blue" onclick="Game.nextWord()">${T.btnNewWord}</button>`
+        )}`;
     }
   }
-
+  
   app.innerHTML = html;
 }
 
