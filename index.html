@@ -326,6 +326,17 @@ function setupWord(word, playerCount) {
   state.currentPlayer = 0;
   state.phase = "reveal-ready";
 }
+  
+function getWordCounts() {
+  try { return JSON.parse(localStorage.getItem('vacarme_counts') || '{}'); }
+  catch(e) { return {}; }
+}
+
+function incrementWordCount(word) {
+  const counts = getWordCounts();
+  counts[word] = (counts[word] || 0) + 1;
+  localStorage.setItem('vacarme_counts', JSON.stringify(counts));
+}
 
 /* =========================================================
    ACTIONS
@@ -359,7 +370,18 @@ const Game = {
       render();
       return;
     }
-    state.words = shuffle(filtered);
+
+    const counts = getWordCounts();
+    const grouped = {};
+    filtered.forEach(r => {
+      const n = counts[r.Word] || 0;
+      if (!grouped[n]) grouped[n] = [];
+      grouped[n].push(r);
+    });
+    state.words = Object.keys(grouped)
+      .map(Number).sort((a, b) => a - b)
+      .flatMap(n => shuffle(grouped[n]));
+    
     state.wordIndex = 0;
     setupWord(state.words[0], state.playerCount);
     state.screen = "game";
@@ -401,6 +423,8 @@ const Game = {
   },
 
   showSolution() {
+    const word = state.words[state.wordIndex];
+    if (word) incrementWordCount(word.Word);
     state.phase = "solution-shown";
     render();
   },
