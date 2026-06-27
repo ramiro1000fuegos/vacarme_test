@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Vacarme</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --felt: #16382E;
+    --felt-dark: #0F2920;
+    --card: #F6EFE2;
+    --card-edge: #E4D8BE;
+    --ink: #221F1A;
+    --ink-soft: #6B6356;
+    --red: #9C2B3A;
+    --gold: #C8A24A;
+    --serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--felt);
+    font-family: var(--sans);
+  }
+  #app {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    background: radial-gradient(circle at 50% 0%, var(--felt), var(--felt-dark));
+    position: relative;
+  }
+  .topbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--card);
+    cursor: pointer;
+    padding: 6px;
+    opacity: 0.85;
+  }
+  .icon-btn:hover { opacity: 1; }
+  .icon-btn svg { width: 22px; height: 22px; }
+
+  h1.page-title {
+    color: var(--card);
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    margin: 0 0 8px 0;
+    text-align: center;
+  }
+  p.page-sub {
+    color: var(--card);
+    opacity: 0.8;
+    font-size: 0.95rem;
+    margin: 0 0 32px 0;
+    text-align: center;
+    max-width: 320px;
+  }
+
+  .lang-row, .players-row { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .tile-btn {
+    background: var(--card);
+    border: none;
+    border-radius: 18px;
+    padding: 28px 30px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.12s ease;
+  }
+  .tile-btn:active { transform: scale(0.95); }
+  .tile-btn .flag { font-size: 44px; line-height: 1; }
+  .tile-btn .label { color: var(--ink); font-family: var(--serif); font-size: 1rem; }
+  .tile-btn .num { color: var(--ink); font-family: var(--serif); font-size: 2rem; }
+
+  .card-shell {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    min-height: 320px;
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 18px;
+    padding: 40px 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .pip {
+    position: absolute;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--gold);
+    user-select: none;
+  }
+  .pip.tl { top: 14px; left: 18px; }
+  .pip.br { bottom: 14px; right: 18px; transform: rotate(180deg); }
+  .pip.accent { color: var(--red); }
+
+  .word-counter {
+    color: var(--gold);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.85;
+  }
+  .player-label {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .secret-instr {
+    color: var(--ink);
+    font-size: 0.95rem;
+    margin-bottom: 32px;
+    max-width: 260px;
+  }
+  .syllable-big {
+    color: var(--red);
+    font-family: var(--serif);
+    font-size: 3.4rem;
+    line-height: 1;
+    margin-bottom: 32px;
+  }
+  .solution-word {
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 2.2rem;
+    margin-bottom: 6px;
+  }
+  .solution-syllables {
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    margin-bottom: 32px;
+  }
+
+  .btn {
+    width: 100%;
+    max-width: 320px;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    font-family: var(--sans);
+    color: var(--card);
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    transition: transform 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-red { background: var(--red); }
+  .btn-felt { background: var(--felt); }
+
+  .error-text {
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+  .loading-text {
+    color: var(--card);
+    font-family: var(--serif);
+    font-size: 1.3rem;
+  }
+  .gameover-icon { color: var(--red); margin-bottom: 8px; }
+  .gameover-title {
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+  }
+  .gameover-sub {
+    color: var(--ink);
+    opacity: 0.7;
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   CONFIGURATION — à adapter
+   ========================================================= */
+// Lien du Google Sheet publié au format CSV
+// (Fichier > Partager > Publier sur le web > format CSV)
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdnEpOivQC2Xjn9r183vcW_Da8WDAXqSF3hx6G7zaXmGL4XySz3yxwgaHtYkDYOjv16Nj6pNHMwAow/pub?gid=1957530806&single=true&output=csv";
+
+/* =========================================================
+   TEXTES
+   ========================================================= */
+const TXT = {
+  fr: {
+    players: "Combien de joueurs ?",
+    playersSub: "Choisissez le nombre de joueurs autour de la table.",
+    loading: "Chargement des mots…",
+    errFetch: "Impossible de charger les mots. Vérifiez votre connexion.",
+    errEmpty: (n) => `Aucun mot trouvé pour cette langue avec ${n} joueurs.`,
+    retry: "Réessayer",
+    wordCounter: (i, n) => `Mot ${i} / ${n}`,
+    playerLabel: (n) => `Joueur ${n}`,
+    secretInstr: "Regardez seul(e) — personne d'autre ne doit voir l'écran.",
+    btnSee: "Voir la syllabe",
+    btnNext: "Joueur suivant",
+    revealedFor: (n) => `Syllabe du joueur ${n}`,
+    btnSolution: "Afficher la solution",
+    solutionIntro: "Le mot était :",
+    btnNewWord: "Mot suivant",
+    gameOverTitle: "Tous les mots ont été proposés.",
+    gameOverSub: "Comptez les points autour de la table.",
+    btnRestart: "Recommencer",
+  },
+  es: {
+    players: "¿Cuántos jugadores?",
+    playersSub: "Elige cuántas personas hay en la mesa.",
+    loading: "Cargando palabras…",
+    errFetch: "No se pudieron cargar las palabras. Revisa tu conexión.",
+    errEmpty: (n) => `No se encontraron palabras para este idioma con ${n} jugadores.`,
+    retry: "Reintentar",
+    wordCounter: (i, n) => `Palabra ${i} / ${n}`,
+    playerLabel: (n) => `Jugador ${n}`,
+    secretInstr: "Mira solo/a — nadie más debe ver la pantalla.",
+    btnSee: "Ver la sílaba",
+    btnNext: "Siguiente jugador",
+    revealedFor: (n) => `Sílaba del jugador ${n}`,
+    btnSolution: "Mostrar la solución",
+    solutionIntro: "La palabra era:",
+    btnNewWord: "Siguiente palabra",
+    gameOverTitle: "Se han propuesto todas las palabras.",
+    gameOverSub: "Contad los puntos en la mesa.",
+    btnRestart: "Volver a empezar",
+  },
+};
+
+const SUITS = ["♠", "♥", "♦", "♣"];
+
+const ICON_HOME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg>';
+const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>';
+const ICON_REPLAY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+
+/* =========================================================
+   ÉTAT
+   ========================================================= */
+const state = {
+  screen: "lang", // lang | players | loading | error | game
+  lang: "fr",
+  playerCount: null,
+  words: [],
+  wordIndex: 0,
+  assignments: [],
+  currentPlayer: 0,
+  phase: "reveal-ready", // reveal-ready | reveal-shown | solution-ready | solution-shown | finished
+  errorMsg: "",
+};
+
+function t() { return TXT[state.lang]; }
+
+/* =========================================================
+   UTILITAIRES
+   ========================================================= */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function setupWord(word, playerCount) {
+  const syllables = shuffle(word["Syll"].split("-").map((s) => s.trim()));
+  state.assignments = syllables.slice(0, playerCount);
+  state.currentPlayer = 0;
+  state.phase = "reveal-ready";
+}
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+const Game = {
+  pickLang(l) {
+    state.lang = l;
+    state.screen = "players";
+    render();
+  },
+
+  pickPlayers(n) {
+    state.playerCount = n;
+    Game.loadWords();
+  },
+
+  async loadWords() {
+    state.screen = "loading";
+    state.errorMsg = "";
+    render();
+    try {
+      const res = await fetch(CSV_URL);
+      if (!res.ok) throw new Error("fetch failed");
+      const csvText = await res.text();
+      const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      const rows = parsed.data;
+
+      const langCode = state.lang.toUpperCase();
+      const filtered = rows.filter(
+        (r) =>
+          (r.Lang || "").trim().toUpperCase() === langCode &&
+          parseInt(r.NbSyll, 10) === state.playerCount
+      );
+
+      if (!filtered.length) {
+        state.errorMsg = t().errEmpty(state.playerCount);
+        state.screen = "error";
+        render();
+        return;
+      }
+
+      state.words = shuffle(filtered);
+      state.wordIndex = 0;
+      setupWord(state.words[0], state.playerCount);
+      state.screen = "game";
+      render();
+    } catch (e) {
+      console.error("Erreur de chargement du CSV :", e);
+      state.errorMsg = t().errFetch;
+      state.screen = "error";
+      render();
+    }
+  },
+
+  seeSyllable() {
+    state.phase = "reveal-shown";
+    render();
+  },
+
+  nextPlayer() {
+    if (state.currentPlayer + 1 < state.playerCount) {
+      state.currentPlayer += 1;
+      state.phase = "reveal-ready";
+    } else {
+      state.phase = "solution-ready";
+    }
+    render();
+  },
+
+  showSolution() {
+    state.phase = "solution-shown";
+    render();
+  },
+
+  nextWord() {
+    const next = state.wordIndex + 1;
+    if (next < state.words.length) {
+      state.wordIndex = next;
+      setupWord(state.words[next], state.playerCount);
+    } else {
+      state.phase = "finished";
+    }
+    render();
+  },
+
+  resetAll() {
+    state.screen = "lang";
+    state.lang = "fr";
+    state.playerCount = null;
+    state.words = [];
+    state.wordIndex = 0;
+    render();
+  },
+};
+
+/* =========================================================
+   RENDU
+   ========================================================= */
+function topbar(showHome) {
+  return `<div class="topbar">
+    ${showHome ? `<button class="icon-btn" onclick="Game.resetAll()" aria-label="accueil">${ICON_HOME}</button>` : "<span></span>"}
+    <span></span>
+  </div>`;
+}
+
+function cardShell(innerHtml, suit, accent) {
+  return `<div class="card-shell">
+    <span class="pip tl ${accent ? "accent" : ""}">${suit}</span>
+    <span class="pip br ${accent ? "accent" : ""}">${suit}</span>
+    ${innerHtml}
+  </div>`;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  const T = t();
+  let html = "";
+
+  if (state.screen === "lang") {
+    html = `
+      ${topbar(false)}
+      <h1 class="page-title">Français / Español</h1>
+      <div class="lang-row">
+        <button class="tile-btn" onclick="Game.pickLang('fr')">
+          <span class="flag">🇫🇷</span>
+          <span class="label">Français</span>
+        </button>
+        <button class="tile-btn" onclick="Game.pickLang('es')">
+          <span class="flag">🇪🇸</span>
+          <span class="label">Español</span>
+        </button>
+      </div>`;
+  }
+
+  else if (state.screen === "players") {
+    html = `
+      ${topbar(true)}
+      <h1 class="page-title">${T.players}</h1>
+      <p class="page-sub">${T.playersSub}</p>
+      <div class="players-row">
+        ${[3, 4, 5].map((n) => `<button class="tile-btn" onclick="Game.pickPlayers(${n})"><span class="num">${n}</span></button>`).join("")}
+      </div>`;
+  }
+
+  else if (state.screen === "loading") {
+    html = `${topbar(false)}<p class="loading-text">${T.loading}</p>`;
+  }
+
+  else if (state.screen === "error") {
+    html = `
+      ${topbar(true)}
+      ${cardShell(`
+        <p class="error-text">${state.errorMsg}</p>
+        <button class="btn btn-red" onclick="Game.loadWords()">${T.retry}</button>
+      `, "♣")}`;
+  }
+
+  else if (state.screen === "game") {
+    const word = state.words[state.wordIndex] || {};
+    const suit = SUITS[(state.wordIndex + state.currentPlayer) % SUITS.length];
+    const counter = `<p class="word-counter">${T.wordCounter(state.wordIndex + 1, state.words.length)}</p>`;
+
+    if (state.phase === "finished") {
+      html = `
+        ${topbar(true)}
+        ${cardShell(`
+          <p class="gameover-title">${T.gameOverTitle}</p>
+          <p class="gameover-sub">${T.gameOverSub}</p>
+          <button class="btn btn-red" onclick="Game.resetAll()">${ICON_REPLAY} ${T.btnRestart}</button>
+        `, "♥", true)}`;
+    }
+
+    else if (state.phase === "reveal-ready" || state.phase === "reveal-shown") {
+      let inner = `<p class="player-label">${T.playerLabel(state.currentPlayer + 1)}</p>`;
+      if (state.phase === "reveal-ready") {
+        inner += `
+          <p class="secret-instr">${T.secretInstr}</p>
+          <button class="btn btn-red" onclick="Game.seeSyllable()">${ICON_EYE} ${T.btnSee}</button>`;
+      } else {
+        inner += `
+          <p class="player-label">${T.revealedFor(state.currentPlayer + 1)}</p>
+          <p class="syllable-big">${state.assignments[state.currentPlayer]}</p>
+          <button class="btn btn-felt" onclick="Game.nextPlayer()">${T.btnNext} ${ICON_ARROW}</button>`;
+      }
+      html = `${topbar(true)}${counter}${cardShell(inner, suit)}`;
+    }
+
+    else if (state.phase === "solution-ready") {
+      html = `
+        ${topbar(true)}
+        ${counter}
+        ${cardShell(`
+          <p class="player-label">${T.playerLabel(state.playerCount)}</p>
+          <button class="btn btn-red" onclick="Game.showSolution()">${T.btnSolution}</button>
+        `, suit, true)}`;
+    }
+
+    else if (state.phase === "solution-shown") {
+      html = `
+        ${topbar(true)}
+        ${counter}
+        ${cardShell(`
+          <p class="player-label">${T.solutionIntro}</p>
+          <p class="solution-word">${word["Word"]}</p>
+          <p class="solution-syllables">${word["Syll"]}</p>
+          <button class="btn btn-red" onclick="Game.nextWord()">${T.btnNewWord}</button>
+        `, suit, true)}`;
+    }
+  }
+
+  app.innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>
